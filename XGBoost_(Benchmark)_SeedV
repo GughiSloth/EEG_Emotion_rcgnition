@@ -1,0 +1,38 @@
+from xgboost import XGBClassifier
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+
+# === Define XGBoost model ===
+xgb = XGBClassifier(
+    objective='multi:softmax',  # or 'multi:softprob' for probabilities
+    num_class=5,
+    max_depth=6,
+    learning_rate=0.1,
+    n_estimators=100,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    use_label_encoder=False,
+    eval_metric='mlogloss',
+    random_state=42
+)
+
+# === Cross-validation ===
+kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+scores = cross_val_score(xgb, X_trainval_filtered, y_trainval, cv=kf, scoring='accuracy')
+print(f"📊 5-Fold CV Accuracy (XGBoost): {scores.mean():.4f} ± {scores.std():.4f}")
+
+# === Train final model ===
+xgb.fit(X_trainval_filtered, y_trainval)
+y_pred = xgb.predict(X_test_filtered)
+
+# === Evaluation ===
+print("\n📋 Classification Report (XGBoost):")
+print(classification_report(y_test, y_pred, digits=4))
+
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot(cmap='Blues')
+plt.title("Confusion Matrix - XGBoost on SEED-V")
+plt.tight_layout()
+plt.show()
